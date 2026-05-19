@@ -1,0 +1,41 @@
+{
+  "name": "sga-qr-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router": "^7.13.0",
+    "zustand": "^5.3.0",
+    "axios": "^1.7.0",
+    "motion": "^12.23.24",
+    "qrcode.react": "^1.0.1",
+    "html5-qrcode": "^2.3.0",
+    "pyotp": "^2.9.2",
+    "@tabler/icons-react": "^3.9.0",
+    "lucide-react": "^0.487.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vite": "^6.3.5",
+    "@tailwindcss/vite": "^4.1.12",
+    "tailwindcss": "^4.1.12",
+    "postcss": "^8.4.41",
+    "autoprefixer": "^10.4.20",
+    "tailwind-merge": "^3.2.0",
+    "clsx": "^2.1.1",
+    "@headlessui/react": "^2.1.7",
+    "class-variance-authority": "^0.7.1"
+  }
+}

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGA-QR — Wireframe Docente</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f4ef; --bg3: #eeede8;
+    --text1: #1a1a18; --text2: #5a5a56; --text3: #9a9a94;
+    --border1: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --radius: 8px; --radius-lg: 12px;
+    --green: #4caf50; --amber: #ff9800; --red: #e53935;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg2); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* TOP META BAR */
+  .meta-bar { background: var(--bg3); border-bottom: 0.5px solid var(--border1); padding: 8px 24px; display: flex; align-items: center; gap: 10px; }
+  .meta-tag { font-size: 11px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .meta-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border2); }
+  .meta-name { font-size: 11px; color: var(--text2); font-weight: 500; }
+
+  /* MAIN APP LAYOUT */
+  .app { display: flex; height: calc(100vh - 38px); }
+
+  /* RAIL */
+  .rail {
+    width: 60px; background: var(--bg); border-right: 0.5px solid var(--border1);
+    display: flex; flex-direction: column; align-items: center; padding: 14px 8px; gap: 4px;
+    flex-shrink: 0;
+  }
+  .rail-logo { width: 36px; height: 36px; border-radius: 8px; background: #444441; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.5px; }
+  .rail-icon {
+    width: 44px; height: 44px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: var(--text3); cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .rail-icon:hover { background: var(--bg2); color: var(--text2); }
+  .rail-icon.active { background: var(--bg2); color: var(--text1); }
+  .rail-icon .tt {
+    position: absolute; left: 54px; top: 50%; transform: translateY(-50%);
+    background: var(--bg); border: 0.5px solid var(--border1);
+    border-radius: var(--radius); padding: 4px 10px;
+    font-size: 12px; color: var(--text1); white-space: nowrap;
+    pointer-events: none; opacity: 0; transition: opacity 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); z-index: 100;
+  }
+  .rail-icon:hover .tt { opacity: 1; }
+  .rail-spacer { flex: 1; }
+
+  /* MAIN CONTENT */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .topbar {
+    background: var(--bg); border-bottom: 0.5px solid var(--border1);
+    padding: 10px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .topbar-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--bg3); border: 0.5px solid var(--border1); flex-shrink: 0; }
+  .topbar-name { font-size: 13px; font-weight: 500; color: var(--text1); }
+  .topbar-role { font-size: 11px; color: var(--text3); }
+  .topbar-sep { flex: 1; }
+  .topbar-date { font-size: 12px; color: var(--text3); }
+
+  .breadcrumb {
+    background: var(--bg); border-bottom: 0.5px solid rgba(0,0,0,0.06);
+    padding: 8px 20px; display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  }
+  .bc { font-size: 12px; color: var(--text3); }
+  .bc.active { color: var(--text1); font-weight: 500; }
+  .bc-sep { font-size: 12px; color: var(--text3); }
+
+  .body { flex: 1; display: flex; gap: 14px; padding: 16px 20px; overflow: hidden; min-height: 0; }
+
+  /* QR PANEL */
+  .qr-panel {
+    flex: 1.1; background: var(--bg);
+    border: 0.5px solid var(--border1); border-radius: var(--radius-lg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; gap: 16px; min-width: 240px;
+  }
+  .qr-meta { text-align: center; }
+  .qr-subject { font-size: 15px; font-weight: 500; color: var(--text1); }
+  .qr-group { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .qr-box {
+    width: 160px; height: 160px; background: var(--bg2);
+    border: 0.5px solid var(--border1); border-radius: var(--radius);
+    position: relative; overflow: hidden; flex-shrink: 0;
+  }
+  .qr-grid { display: grid; grid-template-columns: repeat(10,1fr); gap: 2px; padding: 14px; width: 100%; height: 100%; }
+  .qr-cell { border-radius: 1px; }
+  .qr-corner { position: absolute; width: 28px; height: 28px; border: 3.5px solid #444441; border-radius: 4px; }
+  .qr-corner.tl { top:10px; left:10px; }
+  .qr-corner.tr { top:10px; right:10px; }
+  .qr-corner.bl { bottom:10px; left:10px; }
+  .countdown { text-align: center; width: 160px; }
+  .countdown-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+  .countdown-bar-bg { width: 100%; height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .countdown-bar { height: 5px; background: #444441; border-radius: 3px; transition: width 0.3s linear; }
+  .countdown-num { font-size: 28px; font-weight: 500; color: var(--text1); margin-top: 6px; line-height: 1; }
+  .countdown-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .close-btn {
+    padding: 8px 20px; border-radius: var(--radius);
+    border: 0.5px solid var(--border1); background: var(--bg2);
+    font-size: 12px; color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: background 0.15s;
+  }
+  .close-btn:hover { background: var(--bg3); }
+
+  /* MONITOR PANEL */
+  .monitor-panel {
+    flex: 1; background: var(--bg);
+    border: 0.5px solid var(--border1); border-radius: var(--radius-lg);
+    display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+  }
+  .monitor-header {
+    padding: 12px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.06);
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .monitor-title { font-size: 13px; font-weight: 500; color: var(--text1); flex: 1; }
+  .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-live { background: #e8f5e9; color: #2e7d32; display: flex; align-items: center; gap: 5px; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.4s infinite; flex-shrink: 0; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .stats-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    padding: 12px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.06); gap: 8px; flex-shrink: 0;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-size: 22px; font-weight: 500; color: var(--text1); line-height: 1.1; }
+  .stat-num.green { color: #2e7d32; }
+  .stat-num.red { color: #c62828; }
+  .stat-label { font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .student-list { flex: 1; overflow-y: auto; }
+  .student-list::-webkit-scrollbar { width: 4px; }
+  .student-list::-webkit-scrollbar-thumb { background: var(--border1); border-radius: 2px; }
+  .student-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.04);
+    transition: background 0.1s;
+  }
+  .student-row:hover { background: var(--bg2); }
+  .student-row:last-child { border-bottom: none; }
+  .s-num { font-size: 11px; color: var(--text3); flex-shrink: 0; width: 70px; }
+  .s-name { flex: 1; font-size: 12px; color: var(--text1); }
+  .s-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .s-dot.ok { background: var(--green); }
+  .s-dot.pending { background: var(--border2); }
+  .s-dot.manual { background: var(--amber); }
+  .s-edit { font-size: 16px; color: var(--text3); cursor: pointer; padding: 2px; border-radius: 4px; transition: all 0.1s; }
+  .s-edit:hover { color: var(--text1); background: var(--bg3); }
+
+  /* WF annotation */
+  .wf-note {
+    display: flex; gap: 8px; padding: 10px 20px 16px; flex-wrap: wrap; flex-shrink: 0;
+  }
+  .note-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg3); border: 0.5px solid var(--border1);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 11px; color: var(--text2);
+  }
+</style>
+</head>
+<body>
+<div class="meta-bar">
+  <span class="meta-tag">SGA-QR · Wireframe</span>
+  <span class="meta-dot"></span>
+  <span class="meta-name">Vista Docente — Pase de lista activo</span>
+  <span style="flex:1"></span>
+  <span class="meta-tag">Sprint 1 · Mayo 2026</span>
+</div>
+
+<div class="app">
+  <div class="rail">
+    <div class="rail-logo">QR</div>
+    <div class="rail-icon active"><i class="ti ti-layout-grid"></i><span class="tt">Mis clases</span></div>
+    <div class="rail-icon"><i class="ti ti-chart-bar"></i><span class="tt">Reportes</span></div>
+    <div class="rail-icon"><i class="ti ti-users"></i><span class="tt">Alumnos</span></div>
+    <div class="rail-icon"><i class="ti ti-calendar"></i><span class="tt">Horarios</span></div>
+    <div class="rail-spacer"></div>
+    <div class="rail-icon"><i class="ti ti-user-circle"></i><span class="tt">Perfil</span></div>
+    <div class="rail-icon"><i class="ti ti-logout"></i><span class="tt">Salir</span></div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-avatar"></div>
+      <div>
+        <div class="topbar-name">Prof. Juan Pérez Ramírez</div>
+        <div class="topbar-role">Ing. en Sistemas Computacionales · ITM</div>
+      </div>
+      <div class="topbar-sep"></div>
+      <div class="topbar-date" id="live-date">12/05/2026 — 09:00 h</div>
+    </div>
+    <div class="breadcrumb">
+      <span class="bc">Mis clases</span>
+      <i class="ti ti-chevron-right bc-sep"></i>
+      <span class="bc">Ing. de Software · 8A</span>
+      <i class="ti ti-chevron-right bc-sep"></i>
+      <span class="bc active">Pase de lista activo</span>
+    </div>
+
+    <div class="body">
+      <!-- QR -->
+      <div class="qr-panel">
+        <div class="qr-meta">
+          <div class="qr-subject">Ingeniería de Software</div>
+          <div class="qr-group">Grupo 8A &nbsp;·&nbsp; Aula B-204 &nbsp;·&nbsp; 09:00–10:00 h</div>
+        </div>
+        <div class="qr-box">
+          <div class="qr-corner tl"></div>
+          <div class="qr-corner tr"></div>
+          <div class="qr-corner bl"></div>
+          <div class="qr-grid" id="qrgrid"></div>
+        </div>
+        <div class="countdown">
+          <div class="countdown-label">El código se renueva en</div>
+          <div class="countdown-bar-bg"><div class="countdown-bar" id="cbar" style="width:80%"></div></div>
+          <div class="countdown-num" id="cnum">12</div>
+          <div class="countdown-sub">segundos</div>
+        </div>
+        <button class="close-btn">
+          <i class="ti ti-player-stop"></i> Cerrar clase
+        </button>
+      </div>
+
+      <!-- Monitor -->
+      <div class="monitor-panel">
+        <div class="monitor-header">
+          <span class="monitor-title">Asistencia en tiempo real</span>
+          <span class="badge badge-live"><span class="live-dot"></span>En vivo</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num green" id="cnt-p">18</div><div class="stat-label">presentes</div></div>
+          <div class="stat"><div class="stat-num red" id="cnt-a">12</div><div class="stat-label">pendientes</div></div>
+          <div class="stat"><div class="stat-num">30</div><div class="stat-label">total</div></div>
+        </div>
+        <div class="student-list" id="slist"></div>
+      </div>
+    </div>
+
+    <div class="wf-note">
+      <span class="note-tag"><i class="ti ti-info-circle"></i> QR renovado cada 15s (TOTP) — token inválido pasado ese tiempo</span>
+      <span class="note-tag"><i class="ti ti-edit"></i> Corrección manual disponible por incidencias técnicas</span>
+      <span class="note-tag"><i class="ti ti-map-pin"></i> Validación GPS en el dispositivo del alumno — coordenadas no almacenadas</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const students = [
+  {name:'García Ramírez, Sofía',    num:'23121001', s:'ok'},
+  {name:'López Torres, Andrés',     num:'23121002', s:'ok'},
+  {name:'Hernández Cruz, Valeria',  num:'23121003', s:'ok'},
+  {name:'Martínez Díaz, Carlos',    num:'23121004', s:'pending'},
+  {name:'Rodríguez Vega, Paola',    num:'23121005', s:'ok'},
+  {name:'Sánchez Flores, Ernesto',  num:'23121006', s:'pending'},
+  {name:'Jiménez Reyes, Claudia',   num:'23121007', s:'ok'},
+  {name:'Morales Peña, Héctor',     num:'23121008', s:'pending'},
+  {name:'Castro Mendoza, Daniela',  num:'23121009', s:'ok'},
+  {name:'Vargas Ortiz, Fernando',   num:'23121010', s:'manual'},
+  {name:'Ríos Guerrero, Mariana',   num:'23121011', s:'ok'},
+  {name:'Pacheco Luna, Rodrigo',    num:'23121012', s:'pending'},
+  {name:'Fuentes Mora, Alejandra',  num:'23121013', s:'ok'},
+  {name:'Torres Ibáñez, Miguel',    num:'23121014', s:'pending'},
+];
+const statusLabel = {ok:'Presente', pending:'Pendiente', manual:'Corrección manual'};
+
+function renderList() {
+  document.getElementById('slist').innerHTML = students.map(s => `
+    <div class="student-row">
+      <span class="s-num">${s.num}</span>
+      <span class="s-name">${s.name}</span>
+      <span class="s-dot ${s.s}" title="${statusLabel[s.s]}"></span>
+      <i class="ti ti-edit s-edit" title="Corregir asistencia"></i>
+    </div>`).join('');
+}
+
+function genQR() {
+  const g = document.getElementById('qrgrid');
+  g.innerHTML = '';
+  for(let i=0;i<100;i++) {
+    const c = document.createElement('div');
+    c.className = 'qr-cell';
+    c.style.background = Math.random() > 0.42 ? '#444441' : 'transparent';
+    g.appendChild(c);
+  }
+}
+
+let seconds = 12;
+function tick() {
+  seconds--;
+  if(seconds <= 0) {
+    seconds = 15;
+    genQR();
+    const p = document.getElementById('cnt-p');
+    const a = document.getElementById('cnt-a');
+    const cur = parseInt(p.textContent);
+    if(cur < 28) { p.textContent = cur+1; a.textContent = 30-(cur+1); }
+  }
+  document.getElementById('cbar').style.width = (seconds/15*100)+'%';
+  document.getElementById('cnum').textContent = seconds;
+}
+
+renderList();
+genQR();
+setInterval(tick, 1000);
+
+function updateTime() {
+  const n = new Date();
+  document.getElementById('live-date').textContent =
+    n.toLocaleDateString('es-MX') + ' — ' +
+    n.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) + ' h';
+}
+updateTime();
+setInterval(updateTime, 30000);
+</script>
+</body>
+</html>

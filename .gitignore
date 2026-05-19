@@ -1,0 +1,29 @@
+.zip
+.rar
+.7z
+
+# Dependencias
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

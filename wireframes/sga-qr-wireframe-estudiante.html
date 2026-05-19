@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGA-QR — Wireframe Estudiante (Móvil)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#ffffff; --bg2:#f5f4ef; --bg3:#eeede8;
+    --text1:#1a1a18; --text2:#5a5a56; --text3:#9a9a94;
+    --border1:rgba(0,0,0,0.12); --border2:rgba(0,0,0,0.22);
+    --radius:8px; --radius-lg:12px; --radius-xl:20px;
+    --green:#4caf50;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg2); min-height: 100vh; }
+
+  .meta-bar { background: var(--bg3); border-bottom: 0.5px solid var(--border1); padding: 8px 24px; display: flex; align-items: center; gap: 10px; }
+  .meta-tag { font-size: 11px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .meta-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border2); }
+  .meta-name { font-size: 11px; color: var(--text2); font-weight: 500; }
+
+  .page { padding: 32px 24px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+
+  .flow-title { font-size: 13px; color: var(--text3); text-align: center; }
+
+  .phones-row { display: flex; align-items: flex-start; gap: 0; flex-wrap: wrap; justify-content: center; }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .step-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; text-align: center; max-width: 160px; }
+  .step-num-badge {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--bg3); border: 0.5px solid var(--border1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--text2); font-weight: 500; flex-shrink: 0;
+  }
+
+  .phone-frame {
+    width: 190px; background: var(--bg);
+    border: 0.5px solid var(--border1); border-radius: 30px;
+    overflow: hidden; flex-shrink: 0;
+  }
+  .phone-status {
+    height: 28px; background: var(--bg);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.05);
+  }
+  .status-time { font-size: 11px; font-weight: 600; color: var(--text1); }
+  .status-icons { font-size: 12px; color: var(--text2); display: flex; gap: 4px; }
+  .phone-body { padding: 16px 14px 22px; min-height: 360px; display: flex; flex-direction: column; }
+
+  /* topbar inside phone */
+  .p-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .p-back { font-size: 20px; color: var(--text2); cursor: pointer; }
+  .p-title { font-size: 14px; font-weight: 500; color: var(--text1); }
+  .p-more { font-size: 20px; color: var(--text3); }
+
+  /* screen 1: login */
+  .s1-logo { width: 52px; height: 52px; border-radius: 14px; background: #444441; display: flex; align-items: center; justify-content: center; margin: 8px auto 14px; color: white; font-size: 15px; font-weight: 700; }
+  .s1-title { font-size: 16px; font-weight: 500; color: var(--text1); text-align: center; }
+  .s1-sub { font-size: 11px; color: var(--text3); text-align: center; margin-top: 3px; margin-bottom: 20px; }
+  .p-input { width: 100%; padding: 10px 12px; border: 0.5px solid var(--border1); border-radius: var(--radius); font-size: 12px; color: var(--text2); background: var(--bg2); margin-bottom: 8px; outline: none; }
+  .p-input::placeholder { color: var(--text3); }
+  .p-btn { width: 100%; padding: 11px; border-radius: var(--radius); background: #444441; color: white; font-size: 13px; font-weight: 500; text-align: center; border: none; cursor: pointer; margin-top: 4px; }
+  .p-btn.secondary { background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border1); margin-top: 8px; font-size: 12px; }
+
+  /* screen 2: scanner */
+  .scanner-area { flex: 1; background: #1a1a18; border-radius: var(--radius); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 200px; margin-bottom: 12px; }
+  .scanner-frame { width: 110px; height: 110px; position: relative; }
+  .sc { position: absolute; width: 22px; height: 22px; border-color: white; border-style: solid; }
+  .sc.tl { top:0;left:0; border-width:2.5px 0 0 2.5px; }
+  .sc.tr { top:0;right:0; border-width:2.5px 2.5px 0 0; }
+  .sc.bl { bottom:0;left:0; border-width:0 0 2.5px 2.5px; }
+  .sc.br { bottom:0;right:0; border-width:0 2.5px 2.5px 0; }
+  .scanline { position: absolute; left:0; right:0; height:2px; background: rgba(255,255,255,0.6); animation: sl 2s ease-in-out infinite; }
+  @keyframes sl { 0%,100%{top:5%} 50%{top:90%} }
+  .scanner-hint { position: absolute; bottom: 10px; left:0; right:0; font-size: 11px; color: rgba(255,255,255,0.6); text-align: center; }
+  .scanner-subtitle { font-size: 11px; color: var(--text3); text-align: center; margin-bottom: 10px; }
+
+  /* screen 3: gps */
+  .gps-icon-wrap { display: flex; align-items: center; justify-content: center; margin: 8px 0 10px; }
+  .gps-icon-circle { width: 52px; height: 52px; border-radius: 50%; background: var(--bg2); border: 0.5px solid var(--border1); display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--text2); }
+  .gps-title { font-size: 14px; font-weight: 500; color: var(--text1); text-align: center; margin-bottom: 6px; }
+  .gps-sub { font-size: 11px; color: var(--text3); text-align: center; line-height: 1.5; margin-bottom: 14px; }
+  .gps-map { width: 100%; height: 100px; border-radius: var(--radius); background: var(--bg2); border: 0.5px solid var(--border1); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; position: relative; overflow: hidden; }
+  .gps-outer-ring { width: 64px; height: 64px; border-radius: 50%; border: 1.5px dashed var(--border2); display: flex; align-items: center; justify-content: center; }
+  .gps-inner-ring { width: 32px; height: 32px; border-radius: 50%; border: 1px dashed var(--border1); display: flex; align-items: center; justify-content: center; }
+  .gps-dot { width: 10px; height: 10px; border-radius: 50%; background: #444441; }
+  .gps-building { position: absolute; right: 28px; top: 50%; transform: translateY(-50%); width: 18px; height: 24px; background: var(--border1); border-radius: 2px 2px 0 0; }
+  .gps-building::after { content:''; position:absolute; bottom:0; left:4px; width:10px; height:12px; background: var(--bg); border-radius: 1px 1px 0 0; }
+  .gps-distance { font-size: 11px; color: var(--text3); text-align: center; margin-bottom: 12px; }
+  .gps-privacy { font-size: 10px; color: var(--text3); text-align: center; margin-top: 8px; line-height: 1.4; }
+
+  /* screen 4: success */
+  .success-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; }
+  .check-circle { width: 60px; height: 60px; border-radius: 50%; background: #e8f5e9; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #2e7d32; margin-bottom: 14px; }
+  .success-title { font-size: 15px; font-weight: 500; color: var(--text1); text-align: center; margin-bottom: 6px; }
+  .success-sub { font-size: 11px; color: var(--text3); text-align: center; line-height: 1.5; margin-bottom: 16px; }
+  .receipt { width: 100%; background: var(--bg2); border: 0.5px solid var(--border1); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; }
+  .r-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .r-row:last-child { margin-bottom: 0; }
+  .r-label { font-size: 11px; color: var(--text3); }
+  .r-value { font-size: 11px; font-weight: 500; color: var(--text1); }
+
+  /* connectors */
+  .connector { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 10px; gap: 4px; align-self: center; margin-top: -30px; }
+  .connector-arrow { font-size: 20px; color: var(--text3); }
+  .connector-label { font-size: 10px; color: var(--text3); white-space: nowrap; }
+
+  /* error state note */
+  .error-note { background: #fff3e0; border: 0.5px solid #ffcc02; border-radius: var(--radius); padding: 10px 14px; margin-top: 16px; width: 100%; max-width: 500px; }
+  .error-note-title { font-size: 12px; font-weight: 500; color: #e65100; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+  .error-note-body { font-size: 11px; color: #bf360c; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="meta-bar">
+  <span class="meta-tag">SGA-QR · Wireframe</span>
+  <span class="meta-dot"></span>
+  <span class="meta-name">Vista Estudiante — Flujo móvil (CU-04 + CU-05)</span>
+  <span style="flex:1"></span>
+  <span class="meta-tag">Sprint 1 · Mayo 2026</span>
+</div>
+
+<div class="page">
+  <p class="flow-title">Flujo completo del estudiante · máx. 2 interacciones activas del usuario</p>
+
+  <div class="phones-row">
+
+    <!-- SCREEN 1 -->
+    <div class="phone-wrap">
+      <div class="step-label">1 — inicio de sesión</div>
+      <div class="phone-frame">
+        <div class="phone-status">
+          <span class="status-time">9:00</span>
+          <span class="status-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery-2"></i></span>
+        </div>
+        <div class="phone-body" style="justify-content:center">
+          <div class="s1-logo">QR</div>
+          <div class="s1-title">SGA-QR</div>
+          <div class="s1-sub">Instituto Tecnológico de Morelia</div>
+          <input class="p-input" placeholder="No. de control" disabled>
+          <input class="p-input" placeholder="Contraseña" type="password" disabled>
+          <button class="p-btn">Entrar</button>
+          <button class="p-btn secondary">¿Olvidaste tu contraseña?</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="connector">
+      <i class="ti ti-arrow-right connector-arrow"></i>
+      <span class="connector-label">autenticado</span>
+    </div>
+
+    <!-- SCREEN 2 -->
+    <div class="phone-wrap">
+      <div class="step-label">2 — escanear QR</div>
+      <div class="phone-frame">
+        <div class="phone-status">
+          <span class="status-time">9:02</span>
+          <span class="status-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery-2"></i></span>
+        </div>
+        <div class="phone-body">
+          <div class="p-topbar">
+            <i class="ti ti-arrow-left p-back"></i>
+            <span class="p-title">Escanear QR</span>
+            <span style="width:20px"></span>
+          </div>
+          <div class="scanner-area">
+            <div class="scanner-frame">
+              <div class="sc tl"></div><div class="sc tr"></div>
+              <div class="sc bl"></div><div class="sc br"></div>
+              <div class="scanline"></div>
+            </div>
+            <div class="scanner-hint">Apunta al código del docente</div>
+          </div>
+          <div class="scanner-subtitle">Asegúrate de tener buena iluminación</div>
+          <div style="margin-top:auto">
+            <button class="p-btn secondary" style="font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px">
+              <i class="ti ti-alert-triangle"></i> Reportar incidencia técnica
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="connector">
+      <i class="ti ti-arrow-right connector-arrow"></i>
+      <span class="connector-label">QR válido</span>
+    </div>
+
+    <!-- SCREEN 3 -->
+    <div class="phone-wrap">
+      <div class="step-label">3 — validar ubicación GPS</div>
+      <div class="phone-frame">
+        <div class="phone-status">
+          <span class="status-time">9:02</span>
+          <span class="status-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery-2"></i></span>
+        </div>
+        <div class="phone-body">
+          <div class="p-topbar">
+            <span style="width:20px"></span>
+            <span class="p-title">Verificar ubicación</span>
+            <span style="width:20px"></span>
+          </div>
+          <div class="gps-icon-wrap">
+            <div class="gps-icon-circle"><i class="ti ti-map-pin"></i></div>
+          </div>
+          <div class="gps-title">¿Estás en el aula?</div>
+          <div class="gps-sub">Necesitamos confirmar que estás<br>a menos de <strong>50 m</strong> del Aula B-204</div>
+          <div class="gps-map">
+            <div class="gps-outer-ring">
+              <div class="gps-inner-ring">
+                <div class="gps-dot"></div>
+              </div>
+            </div>
+            <div class="gps-building"></div>
+          </div>
+          <div class="gps-distance">Calculando distancia al aula…</div>
+          <button class="p-btn" style="display:flex;align-items:center;justify-content:center;gap:6px">
+            <i class="ti ti-location"></i> Permitir ubicación
+          </button>
+          <div class="gps-privacy">Tu ubicación se usa solo para verificar presencia.<br>No se almacena de forma permanente (LFPDPPP)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="connector">
+      <i class="ti ti-arrow-right connector-arrow"></i>
+      <span class="connector-label">dentro del radio</span>
+    </div>
+
+    <!-- SCREEN 4 -->
+    <div class="phone-wrap">
+      <div class="step-label">4 — asistencia confirmada</div>
+      <div class="phone-frame">
+        <div class="phone-status">
+          <span class="status-time">9:03</span>
+          <span class="status-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery-2"></i></span>
+        </div>
+        <div class="phone-body">
+          <div class="success-wrap">
+            <div class="check-circle"><i class="ti ti-check"></i></div>
+            <div class="success-title">¡Asistencia registrada!</div>
+            <div class="success-sub">Tu presencia quedó confirmada<br>para esta sesión de clase</div>
+            <div class="receipt">
+              <div class="r-row"><span class="r-label">Materia</span><span class="r-value">Ing. de Software</span></div>
+              <div class="r-row"><span class="r-label">Grupo</span><span class="r-value">8A · B-204</span></div>
+              <div class="r-row"><span class="r-label">Fecha y hora</span><span class="r-value">12/05/2026 · 09:03 h</span></div>
+              <div class="r-row"><span class="r-label">Estado</span><span class="r-value" style="color:#2e7d32">Presente ✓</span></div>
+            </div>
+            <button class="p-btn secondary" style="font-size:12px;display:flex;align-items:center;justify-content:center;gap:6px;width:100%">
+              <i class="ti ti-history"></i> Ver mi historial
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Error state note -->
+  <div class="error-note">
+    <div class="error-note-title"><i class="ti ti-alert-triangle"></i> Estado alternativo — fuera de rango o sin GPS</div>
+    <div class="error-note-body">
+      Si el alumno está a &gt;50 m del aula, o deniega el permiso de ubicación → la pantalla 3 muestra un mensaje de error con opción "Reportar incidencia técnica". No se registra asistencia automáticamente. El docente puede corregir manualmente desde su panel (CU-08).
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
