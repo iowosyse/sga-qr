@@ -1,147 +1,55 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: theme(colors.border, currentColor);
   }
 
   html {
-    @apply scroll-smooth;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-bg-surface text-charcoal font-sans;
+    background-color: #F5F4EF;
+    color: #1A1A18;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
-  h1 {
-    @apply text-3xl font-bold;
-  }
+  h1 { font-size: 1.875rem; font-weight: 700; }
+  h2 { font-size: 1.5rem;   font-weight: 700; }
+  h3 { font-size: 1.25rem;  font-weight: 600; }
+  h4 { font-size: 1.125rem; font-weight: 600; }
 
-  h2 {
-    @apply text-2xl font-bold;
+  input, textarea, select {
+    outline: none;
   }
-
-  h3 {
-    @apply text-xl font-semibold;
-  }
-
-  h4 {
-    @apply text-lg font-semibold;
-  }
-
-  p {
-    @apply text-base-lg;
-  }
-
-  label {
-    @apply text-sm font-medium;
+  input:focus, textarea:focus, select:focus {
+    ring: 2px solid #2C2C2A;
   }
 
   button {
-    @apply font-medium transition-all duration-150;
-  }
-
-  input,
-  textarea,
-  select {
-    @apply text-base placeholder-secondary focus:outline-none focus:ring-2 focus:ring-charcoal;
-  }
-}
-
-@layer components {
-  /* Button variants */
-  .btn-primary {
-    @apply px-lg py-md rounded-sm bg-charcoal text-white font-semibold hover:bg-charcoal/90 active:scale-95 transition-transform;
-  }
-
-  .btn-secondary {
-    @apply px-lg py-md rounded-sm bg-bg-subtle border border-border-light text-charcoal font-semibold hover:bg-bg-lighter transition-colors;
-  }
-
-  .btn-ghost {
-    @apply px-lg py-md rounded-sm text-charcoal font-semibold hover:bg-bg-subtle transition-colors;
-  }
-
-  .btn-danger {
-    @apply px-lg py-md rounded-sm bg-error text-white font-semibold hover:bg-error/90 active:scale-95 transition-transform;
-  }
-
-  /* Card and surface */
-  .card {
-    @apply bg-bg-surface border border-border-subtle rounded-md p-lg shadow-subtle;
-  }
-
-  .panel {
-    @apply bg-bg-surface border border-border-light rounded-lg p-xl;
-  }
-
-  /* Badge */
-  .badge {
-    @apply inline-flex items-center gap-xs-sm px-md py-xs-md rounded-full text-xs font-semibold;
-  }
-
-  .badge-success {
-    @apply bg-success/20 text-success;
-  }
-
-  .badge-warning {
-    @apply bg-warning/20 text-warning;
-  }
-
-  .badge-error {
-    @apply bg-error/20 text-error;
-  }
-
-  /* Live indicator */
-  .live-dot {
-    @apply inline-block w-xs h-xs rounded-full bg-success animate-pulse-scale;
-  }
-
-  .live-badge {
-    @apply inline-flex items-center gap-xs-sm px-md py-xs rounded-full bg-success/10 text-success font-semibold text-xs;
-  }
-
-  /* Input */
-  .input-base {
-    @apply w-full px-md py-sm rounded-sm border border-border-light bg-bg-light text-charcoal text-base focus:border-charcoal focus:ring-2 focus:ring-charcoal/10;
-  }
-
-  /* Responsive text */
-  .text-responsive {
-    @apply text-base-lg md:text-lg lg:text-lg-xl;
-  }
-}
-
-/* Utility animations */
-@layer utilities {
-  .animate-countdown {
-    animation: countdown 0.3s ease-in-out;
-  }
-
-  .animate-glow {
-    animation: glow 1.5s ease-in-out infinite;
+    font-weight: 500;
+    transition: all 150ms;
   }
 }
 
 @keyframes glow {
-  0%,
-  100% {
-    box-shadow: 0 0 8px #22c55e;
-  }
-  50% {
-    box-shadow: 0 0 16px #22c55e;
-  }
+  0%, 100% { box-shadow: 0 0 8px #22c55e; }
+  50%       { box-shadow: 0 0 16px #22c55e; }
 }
 
 @keyframes countdown {
-  0% {
-    transform: scaleX(1);
-  }
-  100% {
-    transform: scaleX(0);
-  }
+  0%   { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+
+@keyframes scanline {
+  0%, 100% { top: 5%; }
+  50%       { top: 90%; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
 }
