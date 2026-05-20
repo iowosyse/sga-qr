@@ -24,8 +24,8 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="w-full max-w-sm px-4 sm:px-6">
         {/* Logo */}
         <div className="flex flex-col items-center gap-4 mb-8">
           <div className="w-20 h-20 rounded-lg bg-charcoal flex items-center justify-center shadow-lg">
