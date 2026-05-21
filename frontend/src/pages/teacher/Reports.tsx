@@ -7,6 +7,7 @@ import {
   IconDownload,
 } from '@tabler/icons-react';
 import { NavRail } from '@/components/NavRail';
+import { BottomNav } from '@/components/BottomNav';
 import { TopBar } from '@/components/TopBar';
 
 // ── Data ────────────────────────────────────────────────────────────────────
@@ -78,7 +79,7 @@ export function Reports() {
         <TopBar userName="MATI. Villaseñor Béjar" userRole="Docente · Depto. ISC" />
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 pb-20 lg:pb-6 space-y-8">
 
           {/* Breadcrumb */}
           <div className="shrink-0">
@@ -284,6 +285,7 @@ export function Reports() {
           <div className="h-2" />
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

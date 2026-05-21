@@ -1,134 +1,179 @@
 import axios, { AxiosInstance } from 'axios';
-import type { AuthResponse, Attendance, ClassSession, QRToken } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// ─── Response shapes ────────────────────────────────────────────────────────
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  rol: string;
+  nombre: string;
+}
+
+export interface TodayClass {
+  horario_id: number;
+  materia: string;
+  grupo: string;
+  aula: string;
+  hora_inicio: string;
+  hora_fin: string;
+  sesion_activa_id: number | null;
+}
+
+export interface StartSessionResponse {
+  session_id: number;
+  qr_base64: string;
+  token: string;
+  expires_in: number;
+}
+
+export interface QRResponse {
+  qr_base64: string;
+  token: string;
+  expires_in: number;
+}
+
+export interface AttendanceRecord {
+  estudiante_id: number;
+  no_control: string;
+  nombre: string;
+  timestamp: string | null;
+  estado: string;
+}
+
+export interface SessionStats {
+  presentes: number;
+  pendientes: number;
+  total: number;
+  students: AttendanceRecord[];
+}
+
+export interface SessionInfo {
+  lat_docente: number | null;
+  lng_docente: number | null;
+  radio_metros: number;
+  materia: string;
+  grupo: string;
+  aula: string;
+}
+
+export interface AttendResponse {
+  ok: boolean;
+  mensaje: string;
+  materia: string;
+  grupo: string;
+  aula: string;
+  timestamp: string;
+}
+
+// ─── Client ─────────────────────────────────────────────────────────────────
+
 class APIClient {
   private client: AxiosInstance;
-  private accessToken: string | null = null;
 
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
-    // Request interceptor to add auth token
     this.client.interceptors.request.use((config) => {
-      const token = this.getAccessToken();
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+      const token = localStorage.getItem('access_token');
+      if (token) config.headers.Authorization = `Bearer ${token}`;
       return config;
     });
 
-    // Response interceptor to handle token refresh
     this.client.interceptors.response.use(
       (response) => response,
-      async (error) => {
+      (error) => {
         if (error.response?.status === 401) {
-          const refreshToken = this.getRefreshToken();
-          if (refreshToken) {
-            try {
-              const response = await this.refresh(refreshToken);
-              this.setTokens(response.access_token, refreshToken);
-              // Retry original request
-              return this.client(error.config);
-            } catch (refreshError) {
-              this.clearTokens();
-              window.location.href = '/login';
-            }
-          }
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('rol');
+          localStorage.removeItem('nombre');
+          window.location.href = '/login';
+        }
+        if (error.response?.status === 423) {
+          const msg = error.response?.data?.detail ?? 'Cuenta bloqueada temporalmente. Intenta en 15 minutos.';
+          alert(msg);
         }
         return Promise.reject(error);
       },
     );
   }
 
-  // Auth endpoints
-  async login(no_control: string, password: string): Promise<AuthResponse> {
-    const response = await this.client.post<AuthResponse>('/api/auth/login', {
-      no_control,
-      password,
-    });
-    this.setTokens(response.data.access_token, response.data.refresh_token);
-    return response.data;
-  }
+  // ── Auth ──────────────────────────────────────────────────────────────────
 
-  async refresh(refreshToken: string): Promise<AuthResponse> {
-    const response = await this.client.post<AuthResponse>('/api/auth/refresh', {
-      refresh_token: refreshToken,
-    });
-    return response.data;
-  }
-
-  // Student endpoints
-  async attend(sessionId: string, qrToken: string, lat: number, lng: number): Promise<Attendance> {
-    const response = await this.client.post<Attendance>('/api/student/attend', {
-      session_id: sessionId,
-      token_qr: qrToken,
-      lat,
-      lng,
-    });
-    return response.data;
-  }
-
-  async getStudentHistory(): Promise<Attendance[]> {
-    const response = await this.client.get<Attendance[]>('/api/student/history');
-    return response.data;
-  }
-
-  // Teacher endpoints
-  async startSession(horarioId: string): Promise<ClassSession> {
-    const response = await this.client.post<ClassSession>('/api/teacher/session/start', {
-      horario_id: horarioId,
-    });
-    return response.data;
-  }
-
-  async getSessionQR(sessionId: string): Promise<QRToken> {
-    const response = await this.client.get<QRToken>(`/api/teacher/session/${sessionId}/qr`);
-    return response.data;
-  }
-
-  async closeSession(sessionId: string): Promise<void> {
-    await this.client.post(`/api/teacher/session/${sessionId}/close`);
-  }
-
-  async getClassesForDay(): Promise<ClassSession[]> {
-    const response = await this.client.get<ClassSession[]>('/api/teacher/classes');
-    return response.data;
-  }
-
-  // Token management
-  private getAccessToken(): string | null {
-    return localStorage.getItem('access_token');
-  }
-
-  private getRefreshToken(): string | null {
-    return localStorage.getItem('refresh_token');
-  }
-
-  private setTokens(accessToken: string, refreshToken: string): void {
-    localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
-    this.accessToken = accessToken;
-  }
-
-  private clearTokens(): void {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    this.accessToken = null;
+  async login(no_control: string, password: string): Promise<LoginResponse> {
+    const { data } = await this.client.post<LoginResponse>('/api/auth/login', { no_control, password });
+    localStorage.setItem('access_token', data.access_token);
+    localStorage.setItem('rol', data.rol);
+    localStorage.setItem('nombre', data.nombre);
+    return data;
   }
 
   logout(): void {
-    this.clearTokens();
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('rol');
+    localStorage.removeItem('nombre');
   }
 
   isAuthenticated(): boolean {
-    return !!this.getAccessToken();
+    return !!localStorage.getItem('access_token');
+  }
+
+  // ── Teacher ───────────────────────────────────────────────────────────────
+
+  async getClassesToday(all = false): Promise<TodayClass[]> {
+    const { data } = await this.client.get<TodayClass[]>('/api/teacher/classes/today', {
+      params: all ? { all: 'true' } : {},
+    });
+    return data;
+  }
+
+  async startSession(horario_id: number, lat: number, lng: number): Promise<StartSessionResponse> {
+    const { data } = await this.client.post<StartSessionResponse>('/api/teacher/session/start', {
+      horario_id,
+      lat,
+      lng,
+    });
+    return data;
+  }
+
+  async getSessionQR(sessionId: number): Promise<QRResponse> {
+    const { data } = await this.client.get<QRResponse>(`/api/teacher/session/${sessionId}/qr`);
+    return data;
+  }
+
+  async getSessionStats(sessionId: number): Promise<SessionStats> {
+    const { data } = await this.client.get<SessionStats>(`/api/teacher/session/${sessionId}/stats`);
+    return data;
+  }
+
+  async closeSession(sessionId: number): Promise<void> {
+    await this.client.post(`/api/teacher/session/${sessionId}/close`);
+  }
+
+  async updateAttendance(asistenciaId: number, estado: string): Promise<void> {
+    await this.client.patch(`/api/teacher/attendance/${asistenciaId}`, { estado });
+  }
+
+  // ── Student ───────────────────────────────────────────────────────────────
+
+  async getSessionInfo(token_qr: string): Promise<SessionInfo> {
+    const { data } = await this.client.get<SessionInfo>('/api/student/session-info', {
+      params: { token_qr },
+    });
+    return data;
+  }
+
+  async attend(token_qr: string, lat: number, lng: number): Promise<AttendResponse> {
+    const { data } = await this.client.post<AttendResponse>('/api/student/attend', {
+      token_qr,
+      lat,
+      lng,
+    });
+    return data;
   }
 }
 

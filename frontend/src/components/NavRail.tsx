@@ -14,7 +14,7 @@ export function NavRail() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   return (
-    <div className="w-[60px] bg-white border-r border-border-subtle flex flex-col items-center py-5 gap-1 flex-shrink-0">
+    <div className="hidden lg:flex w-15 bg-white border-r border-border-subtle flex-col items-center py-5 gap-1 shrink-0">
       {/* Logo */}
       <div
         className="w-9 h-9 rounded-sm flex items-center justify-center text-white font-bold text-sm mb-2 cursor-pointer transition-opacity hover:opacity-90"

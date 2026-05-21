@@ -1,4 +1,5 @@
 import { NavRail } from '@/components/NavRail';
+import { BottomNav } from '@/components/BottomNav';
 import { TopBar } from '@/components/TopBar';
 
 const HOURS = [
@@ -47,7 +48,7 @@ export function Schedule() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar userName="MATI. Villaseñor Béjar" userRole="Docente · Depto. ISC" />
 
-        <div className="flex-1 flex flex-col overflow-hidden p-6 gap-5">
+        <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 pb-20 lg:pb-6 gap-5">
           {/* Page header */}
           <div className="shrink-0">
             <h1 className="text-xl font-bold" style={{ color: '#1A1A18' }}>Horarios</h1>
@@ -183,6 +184,7 @@ export function Schedule() {
           </div>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

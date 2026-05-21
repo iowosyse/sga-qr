@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { NavRail } from '@/components/NavRail';
+import { BottomNav } from '@/components/BottomNav';
 import { TopBar } from '@/components/TopBar';
 
 interface Student {
@@ -69,7 +70,7 @@ export function Students() {
         <TopBar userName="MATI. Villaseñor Béjar" userRole="Docente · Depto. ISC" />
 
         {/* Content: fixed header area + scrollable table, never overflows the screen */}
-        <div className="flex-1 flex flex-col overflow-hidden p-6 gap-5">
+        <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 pb-20 lg:pb-6 gap-5">
 
           {/* Page header — fixed height */}
           <div className="flex items-center justify-between shrink-0">
@@ -184,6 +185,7 @@ export function Students() {
 
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

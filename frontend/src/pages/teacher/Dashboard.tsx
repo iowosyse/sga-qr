@@ -1,118 +1,189 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { NavRail } from '@/components/NavRail';
+import { BottomNav } from '@/components/BottomNav';
 import { TopBar } from '@/components/TopBar';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
+import { apiClient, type TodayClass } from '@/lib/api';
+
+const DEBUG_ALL = import.meta.env.VITE_DEBUG_ALL_CLASSES === 'true';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const [selectedSubject, setSelectedSubject] = useState('Programación Web');
+  const nombre = localStorage.getItem('nombre') ?? 'Docente';
 
-  const subjects = [
-    {
-      id: '1',
-      name: 'Programación Web',
-      group: '7A-TIC',
-      nextClass: '07:00 - 08:30',
-    },
-    {
-      id: '2',
-      name: 'Bases de Datos',
-      group: '8B-TIC',
-      nextClass: '09:00 - 10:30',
-    },
-    {
-      id: '3',
-      name: 'Ingeniería de Software',
-      group: '9C-TIC',
-      nextClass: '11:00 - 12:30',
-    },
-  ];
+  const [classes, setClasses] = useState<TodayClass[]>([]);
+  const [loadingClasses, setLoadingClasses] = useState(true);
+  const [classesError, setClassesError] = useState<string | null>(null);
+  const [geoLoadingId, setGeoLoadingId] = useState<number | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
+  const fetchedRef = useRef(false);
 
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
 
-  // May 2026: starts on Friday. Weekdays only (Mon–Fri); no Sat/Sun entries.
   const attendanceData = [
-    { date: 1,  percentage: 95 }, // Fri
-    { date: 4,  percentage: 75 }, // Mon
-    { date: 5,  percentage: 90 }, // Tue
-    { date: 6,  percentage: 88 }, // Wed
-    { date: 7,  percentage: 92 }, // Thu
-    { date: 8,  percentage: 87 }, // Fri
-    { date: 11, percentage: 80 }, // Mon
-    { date: 12, percentage: 93 }, // Tue
-    { date: 13, percentage: 86 }, // Wed
-    { date: 14, percentage: 91 }, // Thu
-    { date: 15, percentage: 89 }, // Fri
-    { date: 18, percentage: 94 }, // Mon
+    { date: 1,  percentage: 95 },
+    { date: 4,  percentage: 75 },
+    { date: 5,  percentage: 90 },
+    { date: 6,  percentage: 88 },
+    { date: 7,  percentage: 92 },
+    { date: 8,  percentage: 87 },
+    { date: 11, percentage: 80 },
+    { date: 12, percentage: 93 },
+    { date: 13, percentage: 86 },
+    { date: 14, percentage: 91 },
+    { date: 15, percentage: 89 },
+    { date: 18, percentage: 94 },
   ];
+
+  useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    setLoadingClasses(true);
+    apiClient
+      .getClassesToday(DEBUG_ALL)
+      .then(setClasses)
+      .catch(() => setClassesError('No se pudieron cargar las clases.'))
+      .finally(() => setLoadingClasses(false));
+  }, []);
+
+  const handleStartSession = (cls: TodayClass) => {
+    if (!navigator.geolocation) {
+      setStartError('Tu navegador no soporta geolocalización.');
+      return;
+    }
+    setGeoLoadingId(cls.horario_id);
+    setStartError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          const data = await apiClient.startSession(cls.horario_id, lat, lng);
+          navigate('/teacher/session', {
+            state: {
+              session_id: data.session_id,
+              token: data.token,
+              materia: cls.materia,
+              grupo: cls.grupo,
+              aula: cls.aula,
+            },
+          });
+        } catch (err: unknown) {
+          const axErr = err as { response?: { data?: { detail?: string } } };
+          setStartError(axErr.response?.data?.detail ?? 'No se pudo iniciar la sesión.');
+        } finally {
+          setGeoLoadingId(null);
+        }
+      },
+      () => {
+        setStartError('Debes permitir el acceso a tu ubicación para iniciar el pase de lista.');
+        setGeoLoadingId(null);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   return (
     <div className="flex h-screen bg-bg-app">
+      {/* Desktop sidebar */}
       <NavRail />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar userName="MATI. Villaseñor Béjar" userRole="Docente · Depto. ISC" />
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <TopBar userName={nombre} userRole="Docente · Depto. ISC" />
 
-        <div className="flex-1 flex flex-col overflow-auto">
-          <div className="flex-1 p-6 space-y-6">
-            {/* Subject selector */}
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-semibold text-charcoal">Materia:</label>
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="px-4 py-2 rounded-sm border border-border-light bg-white text-charcoal text-sm font-medium focus:outline-none focus:ring-2 focus:ring-charcoal/10"
-              >
-                {subjects.map((s) => (
-                  <option key={s.id} value={s.name}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* Scrollable content — add bottom padding on mobile for BottomNav */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4 lg:p-6 space-y-6 pb-20 lg:pb-6">
 
-            {/* Calendar and action */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <AttendanceCalendar month={currentMonth} year={currentYear} data={attendanceData} />
+            {/* Section title */}
+            <h2 className="text-sm font-bold text-charcoal">
+              Clases de hoy{DEBUG_ALL ? ' (debug)' : ''}
+            </h2>
+
+            {/* Error / loading states */}
+            {loadingClasses && (
+              <p className="text-sm text-secondary">Cargando clases...</p>
+            )}
+            {classesError && (
+              <p className="text-sm text-red-600">{classesError}</p>
+            )}
+            {startError && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                {startError}
               </div>
+            )}
+            {!loadingClasses && !classesError && classes.length === 0 && (
+              <p className="text-sm text-secondary">No tienes clases programadas para hoy.</p>
+            )}
 
-              <div className="flex flex-col gap-4 justify-start">
-                <button
-                  onClick={() => navigate('/teacher/session')}
-                  className="w-full font-semibold transition-opacity shadow-md"
-                  style={{
-                    backgroundColor: '#2C2C2A',
-                    color: '#ffffff',
-                    padding: '1rem 1.5rem',
-                    borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                  onMouseOver={(e) => (e.currentTarget.style.opacity = '0.9')}
-                  onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
-                >
-                  Iniciar pase de lista
-                </button>
-
-                <div className="bg-white border border-border-subtle rounded-lg p-4">
-                  <p className="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Próxima clase</p>
-                  {subjects.find((s) => s.name === selectedSubject) && (
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-charcoal">{selectedSubject}</p>
-                      <p className="text-xs text-secondary">
-                        {subjects.find((s) => s.name === selectedSubject)?.nextClass}
+            {/* Class cards */}
+            <div className="space-y-3">
+              {classes.map((cls) => {
+                const isLoading = geoLoadingId === cls.horario_id;
+                const hasActive = cls.sesion_activa_id !== null;
+                return (
+                  <div
+                    key={cls.horario_id}
+                    className="flex items-center justify-between bg-white border border-border-subtle rounded-lg px-4 py-3 gap-3"
+                    style={{ minHeight: 64 }}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-charcoal truncate">{cls.materia}</p>
+                      <p className="text-xs text-secondary mt-0.5">
+                        Grupo {cls.grupo} · {cls.aula} · {cls.hora_inicio}–{cls.hora_fin}
                       </p>
                     </div>
-                  )}
-                </div>
-              </div>
+                    {hasActive ? (
+                      /* Laptop joins an already-running session started from mobile */
+                      <button
+                        onClick={() =>
+                          navigate('/teacher/session', {
+                            state: {
+                              session_id: cls.sesion_activa_id,
+                              token: '',        // will be fetched on mount
+                              materia: cls.materia,
+                              grupo: cls.grupo,
+                              aula: cls.aula,
+                            },
+                          })
+                        }
+                        className="shrink-0 px-4 rounded-lg text-xs font-bold text-white transition-opacity"
+                        style={{ backgroundColor: '#2E7D32', minHeight: 44, whiteSpace: 'nowrap' }}
+                        onMouseOver={(e) => (e.currentTarget.style.opacity = '0.85')}
+                        onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
+                      >
+                        Ver pase activo
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleStartSession(cls)}
+                        disabled={isLoading || geoLoadingId !== null}
+                        className="shrink-0 px-4 rounded-lg text-xs font-bold text-white disabled:opacity-50 transition-opacity"
+                        style={{ backgroundColor: '#2C2C2A', minHeight: 44, whiteSpace: 'nowrap' }}
+                        onMouseOver={(e) => !isLoading && (e.currentTarget.style.opacity = '0.85')}
+                        onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
+                      >
+                        {isLoading ? 'Obteniendo ubicación...' : 'Iniciar pase de lista'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+
+            {/* Attendance calendar — full width on mobile */}
+            <div>
+              <AttendanceCalendar month={currentMonth} year={currentYear} data={attendanceData} />
+            </div>
+
           </div>
         </div>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <BottomNav />
     </div>
   );
 }

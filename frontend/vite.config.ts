@@ -10,16 +10,20 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: ['jsqr'],
+  },
   server: {
+    host: '0.0.0.0',
     port: 5173,
+    allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://192.168.100.235:8001',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
       '/ws': {
-        target: 'ws://localhost:8000',
+        target: 'ws://192.168.100.235:8001',
         ws: true,
       },
     },

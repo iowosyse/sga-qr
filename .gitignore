@@ -1,6 +1,9 @@
 .zip
 .rar
 .7z
+body.json
+
+.claude/
 
 # Dependencias
 node_modules/
