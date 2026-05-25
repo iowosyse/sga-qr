@@ -178,7 +178,7 @@ async def start_session(
         totp_secret=secret,
         lat_centro=body.lat,
         lng_centro=body.lng,
-        radio_metros=50,
+        radio_metros=15,
     )
     db.add(sesion_activa)
     await db.commit()

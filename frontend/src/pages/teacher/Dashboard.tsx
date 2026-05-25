@@ -34,26 +34,15 @@ export function Dashboard() {
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectMotivo, setRejectMotivo] = useState<{ [key: number]: string }>({});
   const [showingMotivo, setShowingMotivo] = useState<number | null>(null);
+  const [grupos, setGrupos] = useState<{ id: number; nombre: string }[]>([]);
   const fetchedRef = useRef(false);
   const fetchedJustificantesRef = useRef(false);
+  const fetchedGruposRef = useRef(false);
 
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-
-  const attendanceData = [
-    { date: 1,  percentage: 95 },
-    { date: 4,  percentage: 75 },
-    { date: 5,  percentage: 90 },
-    { date: 6,  percentage: 88 },
-    { date: 7,  percentage: 92 },
-    { date: 8,  percentage: 87 },
-    { date: 11, percentage: 80 },
-    { date: 12, percentage: 93 },
-    { date: 13, percentage: 86 },
-    { date: 14, percentage: 91 },
-    { date: 15, percentage: 89 },
-    { date: 18, percentage: 94 },
-  ];
+  // Calculate grupoId based on first class and available groups
+  const primeraClase = classes[0];
+  const grupoActivo = grupos.find((g) => g.nombre === primeraClase?.grupo);
+  const grupoId = grupoActivo?.id ?? grupos[0]?.id ?? null;
 
   useEffect(() => {
     if (fetchedRef.current) return;
@@ -81,6 +70,21 @@ export function Dashboard() {
       }
     };
     fetchJustificantes();
+  }, []);
+
+  useEffect(() => {
+    if (fetchedGruposRef.current) return;
+    fetchedGruposRef.current = true;
+    const fetchGrupos = async () => {
+      try {
+        const result = await apiClient.getGroups();
+        setGrupos(result.grupos || []);
+      } catch (err) {
+        console.error('Error fetching grupos:', err);
+        setGrupos([]);
+      }
+    };
+    fetchGrupos();
   }, []);
 
   const handleStartSession = (cls: TodayClass) => {
@@ -307,7 +311,7 @@ export function Dashboard() {
 
             {/* Attendance calendar — full width on mobile */}
             <div>
-              <AttendanceCalendar month={currentMonth} year={currentYear} data={attendanceData} />
+              <AttendanceCalendar grupoId={grupoId} />
             </div>
 
           </div>

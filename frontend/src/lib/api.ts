@@ -211,6 +211,13 @@ class APIClient {
     return { total: data.alumnos?.length ?? (Array.isArray(data) ? data.length : 0) };
   }
 
+  async getSessionsReport(grupoId: number): Promise<any> {
+    const { data } = await this.client.get('/api/reports/sessions', {
+      params: { grupo_id: grupoId },
+    });
+    return data;
+  }
+
   // ── Justificantes ───────────────────────────────────────────────────────────
 
   async getPendingJustificantes(): Promise<any> {

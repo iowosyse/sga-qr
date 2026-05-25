@@ -61,8 +61,9 @@ export function ActiveSession() {
   const [mobileTab, setMobileTab] = useState<MobileTab>('qr');
   const [qrSize, setQrSize] = useState(200);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState(14);
   const wsRef = useRef<WebSocket | null>(null);
-  const qrIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownExpiresAt = useRef<number>(Date.now() + 14000);
   const nombre = localStorage.getItem('nombre') ?? 'Docente';
 
   const presentCount = students.filter((s) => s.status === 'present').length;
@@ -70,12 +71,24 @@ export function ActiveSession() {
   const manualCount  = students.filter((s) => s.status === 'manual').length;
   const total = students.length;
 
+  const fetchNewQR = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const data = await apiClient.getSessionQR(sessionId);
+      countdownExpiresAt.current = Date.now() + ((data.expires_in - 1) * 1000);
+      setCountdownSeconds(data.expires_in - 1);
+      setQrToken(data.token);
+    } catch (err) {
+      console.error('Error fetching QR:', err);
+    }
+  }, [sessionId]);
+
   // When arriving from "Ver pase activo" (laptop joining existing session),
   // token is empty — fetch the current QR immediately before the 14s interval fires.
   useEffect(() => {
     if (!sessionId || qrToken) return;
-    apiClient.getSessionQR(sessionId).then((qr) => setQrToken(qr.token));
-  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+    fetchNewQR();
+  }, [sessionId, qrToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!sessionId) return;
@@ -89,14 +102,6 @@ export function ActiveSession() {
         })),
       );
     });
-  }, [sessionId]);
-
-  useEffect(() => {
-    if (!sessionId) return;
-    qrIntervalRef.current = setInterval(() => {
-      apiClient.getSessionQR(sessionId).then((qr) => setQrToken(qr.token));
-    }, 14000);
-    return () => { if (qrIntervalRef.current) clearInterval(qrIntervalRef.current); };
   }, [sessionId]);
 
   useEffect(() => {
@@ -131,15 +136,25 @@ export function ActiveSession() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  // Countdown timer — centralizado para evitar múltiples instancias
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((countdownExpiresAt.current - Date.now()) / 1000));
+      setCountdownSeconds(remaining);
+      if (remaining === 0) {
+        fetchNewQR();
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [fetchNewQR]);
+
   const handleRefreshQR = useCallback(() => {
-    if (!sessionId) return;
-    apiClient.getSessionQR(sessionId).then((qr) => setQrToken(qr.token));
-  }, [sessionId]);
+    fetchNewQR();
+  }, [fetchNewQR]);
 
   const handleCloseSession = async () => {
     try { await apiClient.closeSession(sessionId); } catch { /* proceed anyway */ }
     wsRef.current?.close();
-    if (qrIntervalRef.current) clearInterval(qrIntervalRef.current);
     navigate('/teacher/dashboard');
   };
 
@@ -342,12 +357,7 @@ export function ActiveSession() {
                 <div className="text-[9px] text-secondary font-bold tracking-wider uppercase">Escanea con SGA-QR</div>
 
                 {/* Countdown — always visible */}
-                <CountdownBar
-                  initialSeconds={15}
-                  totalSeconds={15}
-                  onExpire={handleRefreshQR}
-                  autoRestart
-                />
+                <CountdownBar seconds={countdownSeconds} />
 
                 {/* Actions */}
                 <div className="w-full flex gap-2.5">
@@ -453,12 +463,7 @@ export function ActiveSession() {
               </p>
 
               <div className="w-full">
-                <CountdownBar
-                  initialSeconds={15}
-                  totalSeconds={15}
-                  onExpire={handleRefreshQR}
-                  autoRestart
-                />
+                <CountdownBar seconds={countdownSeconds} />
               </div>
 
               <button
@@ -495,12 +500,7 @@ export function ActiveSession() {
           />
 
           <div className="w-full max-w-sm px-6">
-            <CountdownBar
-              initialSeconds={15}
-              totalSeconds={15}
-              onExpire={handleRefreshQR}
-              autoRestart
-            />
+            <CountdownBar seconds={countdownSeconds} />
           </div>
 
           <button

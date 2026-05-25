@@ -1,6 +1,5 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { RefreshCw } from 'lucide-react';
-import { CountdownBar } from './CountdownBar';
 
 interface QRDisplayProps {
   subject: string;
@@ -45,14 +44,6 @@ export function QRDisplay({ subject, group, classroom, secret, onClose, onRefres
         </div>
 
         <div className="text-[9px] text-secondary font-bold tracking-wider uppercase">Escanea con SGA-QR</div>
-
-        {/* Countdown — autoRestart handles its own loop; onExpire notifies parent */}
-        <CountdownBar
-          initialSeconds={15}
-          totalSeconds={15}
-          onExpire={onRefresh}
-          autoRestart
-        />
 
         {/* Actions */}
         <div className="w-full flex gap-2.5">

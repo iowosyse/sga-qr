@@ -15,7 +15,7 @@ def esta_en_rango(
     lng_alumno: float,
     lat_docente: float,
     lng_docente: float,
-    radio_metros: float = 50.0,
+    radio_metros: float = 15.0,
 ) -> tuple[bool, float]:
     """Returns (dentro_de_rango, distancia_metros). Coordinates are never persisted."""
     distancia = haversine(lat_alumno, lng_alumno, lat_docente, lng_docente)

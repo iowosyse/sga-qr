@@ -22,5 +22,5 @@ class SesionActiva(Base):
     totp_secret  = Column(String(32), nullable=False)
     lat_centro   = Column(Numeric(10, 8))
     lng_centro   = Column(Numeric(11, 8))
-    radio_metros = Column(Integer, nullable=False, default=50)
+    radio_metros = Column(Integer, nullable=False, default=15)
     creado_at    = Column(DateTime, server_default=func.now(), nullable=False)
