@@ -56,16 +56,16 @@ export function AttendanceCalendar({ grupoId }: AttendanceCalendarProps) {
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
-  // Calcula el primer día visible en la grid (Lunes = 0)
+  // Calcula el primer día visible en la grid (Domingo = 0)
   const firstDay = new Date(year, month, 1);
-  const startDow = (firstDay.getDay() + 6) % 7; // Convert Sun=0 to Mon=0
+  const startDow = firstDay.getDay(); // Sun=0, Mon=1, ..., Sat=6
   const gridStart = new Date(firstDay);
   gridStart.setDate(1 - startDow);
 
   // Genera todas las celdas de la grid (mínimo 4 semanas, máximo 6)
   const lastDay = new Date(year, month + 1, 0);
   const gridEnd = new Date(lastDay);
-  const endDow = (lastDay.getDay() + 6) % 7;
+  const endDow = lastDay.getDay();
   gridEnd.setDate(lastDay.getDate() + (6 - endDow));
 
   const days: Date[] = [];
@@ -133,7 +133,7 @@ export function AttendanceCalendar({ grupoId }: AttendanceCalendarProps) {
       {/* Grid del calendario */}
       <div className="grid grid-cols-7 border-t border-l border-[#E5E4DF]">
         {/* Headers de días */}
-        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dayName) => (
+        {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((dayName) => (
           <div
             key={dayName}
             className="text-xs uppercase font-semibold text-secondary text-center py-2 border-r border-b border-[#E5E4DF] tracking-wide"
