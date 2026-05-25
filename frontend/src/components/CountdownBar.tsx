@@ -32,10 +32,10 @@ export function CountdownBar({ initialSeconds = 15, totalSeconds = 15, onExpire,
     <div className="w-full">
       <div className="flex justify-between items-center mb-2">
         <div className="text-xs text-secondary">Código se renueva en</div>
-        <div className={`text-lg font-bold font-mono transition-colors duration-300 ${isLow ? 'text-error' : 'text-charcoal'}`}>{String(seconds).padStart(2, '0')}s</div>
+        <div className={`text-lg font-bold font-mono transition-colors duration-300 ${isLow ? 'text-amber-500 animate-pulse' : 'text-charcoal'}`}>{String(seconds).padStart(2, '0')}s</div>
       </div>
       <div className="h-1.5 bg-[#F3F4F6] rounded-sm overflow-hidden">
-        <div className={`h-full rounded-sm transition-all duration-900 ${isLow ? 'bg-error' : 'bg-success'}`} style={{ width: `${percentage}%` }} />
+        <div className={`h-full rounded-sm transition-all duration-900 ${isLow ? 'bg-amber-500' : 'bg-success'}`} style={{ width: `${percentage}%` }} />
       </div>
     </div>
   );

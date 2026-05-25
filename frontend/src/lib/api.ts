@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // ─── Response shapes ────────────────────────────────────────────────────────
 
@@ -174,6 +174,58 @@ class APIClient {
       lng,
     });
     return data;
+  }
+
+  // ── Reports ───────────────────────────────────────────────────────────────
+
+  async getGroups(): Promise<{ grupos: { id: number; nombre: string }[] }> {
+    const { data } = await this.client.get('/api/reports/groups');
+    return data;
+  }
+
+  async getReportsSummary(grupoId: number): Promise<any> {
+    const { data } = await this.client.get('/api/reports/summary', {
+      params: { grupo_id: grupoId },
+    });
+    return data;
+  }
+
+  async getAtRisk(grupoId?: number, umbral?: number): Promise<any> {
+    const params: { [key: string]: any } = {};
+    if (grupoId) params.grupo_id = grupoId;
+    if (umbral) params.umbral = umbral;
+    const { data } = await this.client.get('/api/reports/at-risk', { params });
+    return data;
+  }
+
+  async exportCSV(grupoId: number): Promise<Blob> {
+    const { data } = await this.client.get('/api/reports/export/csv', {
+      params: { grupo_id: grupoId },
+      responseType: 'blob',
+    });
+    return data;
+  }
+
+  async getAtRiskCount(): Promise<{ total: number }> {
+    const { data } = await this.client.get('/api/reports/at-risk');
+    return { total: data.alumnos?.length ?? (Array.isArray(data) ? data.length : 0) };
+  }
+
+  // ── Justificantes ───────────────────────────────────────────────────────────
+
+  async getPendingJustificantes(): Promise<any> {
+    const { data } = await this.client.get('/api/teacher/justificantes');
+    return data;
+  }
+
+  async updateJustificante(
+    justificanteId: number,
+    accion: 'aprobar' | 'rechazar',
+    motivo?: string
+  ): Promise<void> {
+    const payload: { accion: string; motivo?: string } = { accion };
+    if (motivo) payload.motivo = motivo;
+    await this.client.patch(`/api/teacher/justificante/${justificanteId}`, payload);
   }
 }
 

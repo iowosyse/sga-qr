@@ -1,21 +1,34 @@
-import { NavLink, useNavigate } from 'react-router';
+import { NavLink, useNavigate, useLocation } from 'react-router';
 import {
   IconLayoutDashboard,
   IconChartBar,
   IconUsers,
   IconCalendarTime,
   IconLogout,
+  IconFileText,
+  IconHistory,
+  IconRadar,
 } from '@tabler/icons-react';
 
-const navItems = [
+const teacherNavItems = [
   { icon: IconLayoutDashboard, label: 'Mis clases', path: '/teacher/dashboard' },
   { icon: IconChartBar,        label: 'Reportes',   path: '/teacher/reports'   },
   { icon: IconUsers,           label: 'Alumnos',    path: '/teacher/students'  },
   { icon: IconCalendarTime,    label: 'Horarios',   path: '/teacher/schedule'  },
 ];
 
+const studentNavItems = [
+  { icon: IconRadar,           label: 'Escanear',   path: '/student/scanner'   },
+  { icon: IconHistory,         label: 'Historial',  path: '/student/history'   },
+  { icon: IconFileText,        label: 'Faltas',     path: '/student/ausencias' },
+];
+
 export function BottomNav() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isTeacher = location.pathname.startsWith('/teacher');
+  const navItems = isTeacher ? teacherNavItems : studentNavItems;
 
   return (
     <nav

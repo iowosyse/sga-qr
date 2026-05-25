@@ -16,9 +16,13 @@ class Asistencia(Base):
 class Justificante(Base):
     __tablename__ = "justificantes"
 
-    id            = Column(Integer, primary_key=True)
-    asistencia_id = Column(Integer, ForeignKey("asistencias.id"))
-    archivo_path  = Column(String(255))
-    estado        = Column(String(15), nullable=False, default="pendiente")
-    revisor_id    = Column(Integer, ForeignKey("usuarios.id"))
-    created_at    = Column(DateTime, server_default=func.now(), nullable=False)
+    id              = Column(Integer, primary_key=True)
+    asistencia_id   = Column(Integer, ForeignKey("asistencias.id"), nullable=False)
+    estudiante_id   = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    archivo_base64  = Column(String, nullable=False)
+    archivo_nombre  = Column(String(255), nullable=False)
+    estado          = Column(String(15), nullable=False, default="pendiente")
+    motivo_rechazo  = Column(String)
+    creado_at       = Column(DateTime, server_default=func.now(), nullable=False)
+    revisado_at     = Column(DateTime)
+    revisor_id      = Column(Integer, ForeignKey("usuarios.id"))

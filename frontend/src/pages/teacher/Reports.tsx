@@ -1,291 +1,463 @@
+import { useState, useEffect } from 'react'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import {
-  IconSchool, IconChartBar, IconAlertTriangle, IconAlertCircle,
-  IconDownload,
-} from '@tabler/icons-react';
-import { NavRail } from '@/components/NavRail';
-import { BottomNav } from '@/components/BottomNav';
-import { TopBar } from '@/components/TopBar';
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ReferenceLine, ResponsiveContainer,
+} from 'recharts'
+import { IconAlertTriangle, IconDownload } from '@tabler/icons-react'
+import { NavRail } from '@/components/NavRail'
+import { BottomNav } from '@/components/BottomNav'
+import { TopBar } from '@/components/TopBar'
+import { apiClient } from '@/lib/api'
 
-// ── Data ────────────────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────
 
-const TREND_DATA = [
-  { semana: 1,  pct: 92 }, { semana: 2,  pct: 90 }, { semana: 3,  pct: 91 },
-  { semana: 4,  pct: 88 }, { semana: 5,  pct: 85 }, { semana: 6,  pct: 83 },
-  { semana: 7,  pct: 80 }, { semana: 8,  pct: 78 }, { semana: 9,  pct: 79 },
-  { semana: 10, pct: 81 }, { semana: 11, pct: 80 }, { semana: 12, pct: 82 },
-  { semana: 13, pct: 83 }, { semana: 14, pct: 84 }, { semana: 15, pct: 84 },
-  { semana: 16, pct: 84 },
-];
-
-const SUBJECTS = [
-  { name: 'Ingeniería de Software',              group: '8A', total: 18, avg: 86 },
-  { name: 'Fundamentos de Ingeniería de Software', group: '7C', total: 16, avg: 82 },
-  { name: 'Taller de Investigación',              group: '9A', total: 14, avg: 78 },
-];
-
-const AT_RISK = [
-  { control: '23M00006', name: 'Flores Ortega, Óscar Manuel',         subject: 'Ing. de Software',   pct: 79, absences: 4  },
-  { control: '23M00009', name: 'Hernández Rojas, Camila Beatriz',     subject: 'Fund. Ing. de SW',   pct: 74, absences: 5  },
-  { control: '23M00012', name: 'Martínez Soto, Héctor Iván',          subject: 'Taller de Inv.',     pct: 68, absences: 6  },
-  { control: '23M00016', name: 'Pacheco Torres, Kevin Josué',         subject: 'Fund. Ing. de SW',   pct: 75, absences: 4  },
-  { control: '23M00020', name: 'Torres Guzmán, Emmanuel Alexis',      subject: 'Ing. de Software',   pct: 62, absences: 7  },
-];
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function subjectBadge(avg: number) {
-  if (avg > 85) return { bg: '#F0FDF4', color: '#16A34A', label: 'Regular' };
-  if (avg >= 70) return { bg: '#FFF7ED', color: '#C2410C', label: 'En riesgo' };
-  return { bg: '#FEF2F2', color: '#DC2626', label: 'Crítico' };
+interface Grupo {
+  id: number
+  nombre: string
 }
 
-function riskBadge(pct: number) {
-  if (pct > 70) return { bg: '#FFF7ED', color: '#C2410C', label: 'En riesgo' };
-  return { bg: '#FEF2F2', color: '#DC2626', label: 'Crítico' };
+interface Estudiante {
+  estudiante_id: number
+  no_control: string
+  nombre: string
+  total_sesiones: number
+  asistencias: number
+  ausencias: number
+  porcentaje: number
+  en_riesgo: boolean
 }
 
-const BORDER = '#E5E4DF';
-const TH = {
-  padding: '10px 14px',
-  fontSize: 10,
-  fontWeight: 700,
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.06em',
-  color: '#9A9A94',
-  backgroundColor: '#FAFAFA',
-  borderBottom: `1px solid ${BORDER}`,
-  textAlign: 'left' as const,
-};
-const TD = (alt: boolean) => ({
-  padding: '12px 14px',
-  fontSize: 12,
-  color: '#1A1A18',
-  borderBottom: `1px solid ${BORDER}`,
-  backgroundColor: alt ? '#FAFAF8' : '#FFFFFF',
-});
+interface Resumen {
+  total_sesiones: number
+  periodo: { inicio: string; fin: string }
+  estudiantes: Estudiante[]
+}
 
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function Reports() {
-  return (
-    <div className="flex h-screen bg-bg-app">
-      <NavRail />
+  const [grupos, setGrupos] = useState<Grupo[]>([])
+  const [grupoSeleccionado, setGrupoSeleccionado] = useState<number | null>(null)
+  const [resumen, setResumen] = useState<Resumen | null>(null)
+  const [atRisk, setAtRisk] = useState<Estudiante[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Estudiante
+    direction: 'asc' | 'desc'
+  }>({ key: 'no_control', direction: 'asc' })
+  const [exporting, setExporting] = useState(false)
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar userName="MATI. Villaseñor Béjar" userRole="Docente · Depto. ISC" />
+  useEffect(() => {
+    const fetchGrupos = async () => {
+      try {
+        setLoading(true)
+        const result = await apiClient.getGroups()
+        setGrupos(result.grupos)
+      } catch (err) {
+        console.error('Error fetching grupos:', err)
+        setError('No se pudieron cargar los grupos')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchGrupos()
+  }, [])
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 pb-20 lg:pb-6 space-y-8">
+  useEffect(() => {
+    if (!grupoSeleccionado) {
+      setResumen(null)
+      setAtRisk([])
+      return
+    }
 
-          {/* Breadcrumb */}
-          <div className="shrink-0">
-            <h1 className="text-xl font-bold" style={{ color: '#1A1A18' }}>Reportes</h1>
-            <p className="text-xs mt-0.5" style={{ color: '#9A9A94' }}>
-              Semestre en curso · MATI. Villaseñor Béjar
-            </p>
-          </div>
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const [resumenRes, atRiskRes] = await Promise.all([
+          apiClient.getReportsSummary(grupoSeleccionado),
+          apiClient.getAtRisk(grupoSeleccionado, 80),
+        ])
 
-          {/* ── SECCIÓN 1: Tarjetas de resumen ── */}
-          <div className="grid grid-cols-4 gap-4">
-            {/* Clases impartidas */}
-            <div className="bg-white rounded-lg border p-5 flex items-start gap-4" style={{ borderColor: BORDER }}>
-              <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: '#F5F4EF' }}>
-                <IconSchool size={20} style={{ color: '#2C2C2A' }} />
-              </div>
-              <div>
-                <div className="text-2xl font-bold" style={{ color: '#1A1A18' }}>48</div>
-                <div className="text-xs mt-0.5" style={{ color: '#9A9A94' }}>Clases impartidas</div>
-              </div>
-            </div>
+        setResumen(resumenRes)
+        setAtRisk(atRiskRes)
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching data:', err)
+        setError('Error al cargar el reporte')
+      } finally {
+        setLoading(false)
+      }
+    }
 
-            {/* Promedio global */}
-            <div className="bg-white rounded-lg border p-5 flex items-start gap-4" style={{ borderColor: BORDER }}>
-              <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: '#F0FDF4' }}>
-                <IconChartBar size={20} style={{ color: '#16A34A' }} />
-              </div>
-              <div>
-                <div className="text-2xl font-bold" style={{ color: '#16A34A' }}>83%</div>
-                <div className="text-xs mt-0.5" style={{ color: '#9A9A94' }}>Asistencia promedio</div>
-              </div>
-            </div>
+    fetchData()
+  }, [grupoSeleccionado])
 
-            {/* En riesgo — fondo amarillo suave */}
-            <div className="rounded-lg border p-5 flex items-start gap-4" style={{ borderColor: '#FED7AA', backgroundColor: '#FFF7ED' }}>
-              <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: '#FFEDD5' }}>
-                <IconAlertTriangle size={20} style={{ color: '#C2410C' }} />
-              </div>
-              <div>
-                <div className="text-2xl font-bold" style={{ color: '#C2410C' }}>4</div>
-                <div className="text-xs mt-0.5" style={{ color: '#C2410C' }}>Alumnos en riesgo (&lt;80%)</div>
-              </div>
-            </div>
+  const metricas = {
+    promedio:
+      resumen && resumen.estudiantes.length > 0
+        ? parseFloat(
+            (resumen.estudiantes.reduce((sum, e) => sum + e.porcentaje, 0) /
+              resumen.estudiantes.length).toFixed(1)
+          )
+        : 0,
+    enRiesgo: resumen ? resumen.estudiantes.filter(e => e.en_riesgo).length : 0,
+    activos: resumen ? resumen.estudiantes.length : 0,
+  }
 
-            {/* Crítico — fondo rojo suave */}
-            <div className="rounded-lg border p-5 flex items-start gap-4" style={{ borderColor: '#FECACA', backgroundColor: '#FEF2F2' }}>
-              <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: '#FEE2E2' }}>
-                <IconAlertCircle size={20} style={{ color: '#DC2626' }} />
-              </div>
-              <div>
-                <div className="text-2xl font-bold" style={{ color: '#DC2626' }}>1</div>
-                <div className="text-xs mt-0.5" style={{ color: '#DC2626' }}>Alumnos críticos (&lt;70%)</div>
-              </div>
-            </div>
-          </div>
+  const estudiantesSorted = () => {
+    if (!resumen) return []
+    const sorted = [...resumen.estudiantes]
+    sorted.sort((a, b) => {
+      const aVal = a[sortConfig.key]
+      const bVal = b[sortConfig.key]
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return sortConfig.direction === 'asc'
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal)
+      }
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal
+      }
+      return 0
+    })
+    return sorted
+  }
 
-          {/* ── SECCIÓN 2: Gráfica de tendencia ── */}
-          <div className="bg-white rounded-lg border p-6" style={{ borderColor: BORDER }}>
-            <h2 className="text-sm font-bold mb-4" style={{ color: '#1A1A18' }}>
-              Tendencia de asistencia — Semestre actual
-            </h2>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={TREND_DATA} margin={{ top: 4, right: 16, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis
-                  dataKey="semana"
-                  tick={{ fontSize: 11, fill: '#9A9A94' }}
-                  label={{ value: 'Semana', position: 'insideBottom', offset: -2, fontSize: 11, fill: '#9A9A94' }}
-                />
-                <YAxis
-                  domain={[60, 100]}
-                  tickFormatter={(v) => `${v}%`}
-                  tick={{ fontSize: 11, fill: '#9A9A94' }}
-                />
-                <Tooltip
-                  formatter={(v) => [`${v}%`, 'Asistencia']}
-                  labelFormatter={(l) => `Semana ${l}`}
-                  contentStyle={{ fontSize: 12, borderColor: BORDER, borderRadius: 6 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="pct"
-                  stroke="#2C2C2A"
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: '#2C2C2A' }}
-                  activeDot={{ r: 5 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+  const handleExport = async () => {
+    if (!grupoSeleccionado) return
+    try {
+      setExporting(true)
+      const blob = await apiClient.exportCSV(grupoSeleccionado)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `asistencia-${grupoSeleccionado}-${
+        new Date().toISOString().split('T')[0]
+      }.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Error exporting:', err)
+      setError('Error al descargar el archivo')
+    } finally {
+      setExporting(false)
+    }
+  }
 
-          {/* ── SECCIÓN 3: Resumen por materia + botón exportar ── */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold" style={{ color: '#1A1A18' }}>Resumen por materia</h2>
+  const estudiantesOrdenados = estudiantesSorted()
+
+  // Para el eje X de la gráfica, usar solo el primer apellido
+  const chartData = estudiantesOrdenados.map(e => ({
+    ...e,
+    shortName: e.nombre.split(' ')[1] ?? e.nombre.split(' ')[0],
+  }))
+
+  if (error && !resumen && !loading) {
+    return (
+      <div className="flex h-screen bg-[#F5F4EF]">
+        <NavRail />
+        <div className="flex-1 flex flex-col">
+          <TopBar />
+          <div className="flex-1 p-6 flex items-center justify-center">
+            <div className="text-center">
+              <IconAlertTriangle size={40} className="mx-auto mb-3 text-[#DC2626]" />
+              <p className="text-[#DC2626] mb-4 font-medium">{error}</p>
               <button
-                onClick={() => alert('Exportando...')}
-                className="flex items-center gap-2 px-4 py-2 rounded-md border text-xs font-semibold transition-colors hover:bg-bg-subtle"
-                style={{ borderColor: BORDER, color: '#5A5A56', backgroundColor: '#FFFFFF' }}
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-[#2C2C2A] text-white text-sm rounded-lg hover:bg-[#1A1A18] transition-colors"
               >
-                <IconDownload size={14} />
-                Exportar reporte CSV
+                Reintentar
               </button>
             </div>
-
-            <div className="bg-white rounded-lg border overflow-hidden" style={{ borderColor: BORDER }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    {['Materia', 'Grupo', 'Total clases', 'Asistencia promedio', 'Estado'].map((h) => (
-                      <th key={h} style={TH}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {SUBJECTS.map((s, i) => {
-                    const badge = subjectBadge(s.avg);
-                    return (
-                      <tr key={s.name}>
-                        <td style={{ ...TD(i % 2 === 1), fontWeight: 500 }}>{s.name}</td>
-                        <td style={TD(i % 2 === 1)}>{s.group}</td>
-                        <td style={TD(i % 2 === 1)}>{s.total}</td>
-                        <td style={TD(i % 2 === 1)}>
-                          <span style={{ fontWeight: 700, color: badge.color }}>{s.avg}%</span>
-                        </td>
-                        <td style={TD(i % 2 === 1)}>
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              padding: '3px 10px',
-                              borderRadius: 99,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              backgroundColor: badge.bg,
-                              color: badge.color,
-                            }}
-                          >
-                            {badge.label}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
           </div>
-
-          {/* ── SECCIÓN 4: Alumnos en riesgo ── */}
-          <div>
-            <h2 className="text-sm font-bold" style={{ color: '#1A1A18' }}>
-              Alumnos en riesgo de reprobación
-            </h2>
-            <p className="text-xs mt-0.5 mb-3" style={{ color: '#9A9A94' }}>
-              Asistencia por debajo del 80%
-            </p>
-
-            <div className="bg-white rounded-lg border overflow-hidden" style={{ borderColor: BORDER }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    {['No. Control', 'Nombre', 'Materia', '% Asistencia', 'Faltas', 'Estado'].map((h) => (
-                      <th key={h} style={TH}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {AT_RISK.map((s, i) => {
-                    const badge = riskBadge(s.pct);
-                    return (
-                      <tr key={s.control}>
-                        <td style={{ ...TD(i % 2 === 1), fontFamily: 'monospace' }}>{s.control}</td>
-                        <td style={{ ...TD(i % 2 === 1), fontWeight: 500 }}>{s.name}</td>
-                        <td style={{ ...TD(i % 2 === 1), color: '#5A5A56' }}>{s.subject}</td>
-                        <td style={TD(i % 2 === 1)}>
-                          <span style={{ fontWeight: 700, color: badge.color }}>{s.pct}%</span>
-                        </td>
-                        <td style={{ ...TD(i % 2 === 1), color: '#5A5A56' }}>{s.absences}</td>
-                        <td style={TD(i % 2 === 1)}>
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              padding: '3px 10px',
-                              borderRadius: 99,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              backgroundColor: badge.bg,
-                              color: badge.color,
-                            }}
-                          >
-                            {badge.label}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* bottom spacing */}
-          <div className="h-2" />
+          <BottomNav />
         </div>
       </div>
-      <BottomNav />
+    )
+  }
+
+  return (
+    <div className="flex h-screen bg-[#F5F4EF]">
+      <NavRail />
+      <div className="flex-1 flex flex-col">
+        <TopBar />
+        <div className="flex-1 overflow-auto p-6">
+          <div className="space-y-5 max-w-7xl mx-auto">
+
+            {/* Header */}
+            <div>
+              <h1 className="text-2xl font-semibold text-[#1A1A18]">
+                Reportes de Asistencia
+              </h1>
+              <p className="text-sm text-[#5A5A56] mt-1">
+                Selecciona un grupo para ver el reporte de asistencia
+              </p>
+            </div>
+
+            {/* Group selector */}
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-[#5A5A56] whitespace-nowrap">
+                Grupo
+              </label>
+              <select
+                value={grupoSeleccionado || ''}
+                onChange={(e) =>
+                  setGrupoSeleccionado(
+                    e.target.value ? parseInt(e.target.value) : null
+                  )
+                }
+                className="w-72 px-3 py-2 bg-white border border-[#E5E4DF] rounded-lg text-sm text-[#1A1A18] focus:outline-none focus:ring-2 focus:ring-[#2C2C2A]/20 focus:border-[#2C2C2A]"
+              >
+                <option value="">— Selecciona un grupo —</option>
+                {grupos.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {!grupoSeleccionado ? (
+              <div className="bg-white rounded-lg border border-[#E5E4DF] p-12 text-center">
+                <p className="text-[#5A5A56]">Selecciona un grupo para ver el reporte</p>
+              </div>
+            ) : (
+              <>
+                {/* Metric cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white rounded-lg border border-[#E5E4DF] p-5">
+                    <p className="text-xs font-medium text-[#5A5A56] uppercase tracking-wide">
+                      Total de sesiones
+                    </p>
+                    {loading ? (
+                      <div className="h-8 bg-[#EEEDE8] rounded animate-pulse mt-2" />
+                    ) : (
+                      <p className="text-3xl font-semibold text-[#2563EB] mt-2">
+                        {resumen?.total_sesiones ?? 0}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="bg-white rounded-lg border border-[#E5E4DF] p-5">
+                    <p className="text-xs font-medium text-[#5A5A56] uppercase tracking-wide">
+                      Promedio de asistencia
+                    </p>
+                    {loading ? (
+                      <div className="h-8 bg-[#EEEDE8] rounded animate-pulse mt-2" />
+                    ) : (
+                      <p className="text-3xl font-semibold text-[#16A34A] mt-2">
+                        {metricas.promedio.toFixed(1)}%
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="bg-white rounded-lg border border-[#E5E4DF] p-5">
+                    <p className="text-xs font-medium text-[#5A5A56] uppercase tracking-wide">
+                      Alumnos en riesgo
+                    </p>
+                    {loading ? (
+                      <div className="h-8 bg-[#EEEDE8] rounded animate-pulse mt-2" />
+                    ) : (
+                      <p className="text-3xl font-semibold text-[#DC2626] mt-2">
+                        {metricas.enRiesgo}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="bg-white rounded-lg border border-[#E5E4DF] p-5">
+                    <p className="text-xs font-medium text-[#5A5A56] uppercase tracking-wide">
+                      Alumnos activos
+                    </p>
+                    {loading ? (
+                      <div className="h-8 bg-[#EEEDE8] rounded animate-pulse mt-2" />
+                    ) : (
+                      <p className="text-3xl font-semibold text-[#2563EB] mt-2">
+                        {metricas.activos}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Vertical bar chart */}
+                <div className="bg-white rounded-lg border border-[#E5E4DF] p-5">
+                  <h2 className="text-sm font-semibold text-[#1A1A18] mb-4">
+                    Asistencia por estudiante
+                  </h2>
+                  {loading ? (
+                    <div className="h-72 bg-[#EEEDE8] rounded animate-pulse flex items-center justify-center">
+                      <p className="text-[#5A5A56] text-sm">Cargando gráfica...</p>
+                    </div>
+                  ) : chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart
+                        data={chartData}
+                        margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="#E5E4DF"
+                        />
+                        <XAxis
+                          dataKey="shortName"
+                          tick={{ fontSize: 11, fill: '#5A5A56' }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          domain={[0, 100]}
+                          tick={{ fontSize: 11, fill: '#5A5A56' }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(v) => `${v}%`}
+                        />
+                        <Tooltip
+                          formatter={(value: number) => [`${value.toFixed(1)}%`, 'Asistencia']}
+                          labelFormatter={(label) => {
+                            const match = chartData.find(d => d.shortName === label)
+                            return match?.nombre ?? label
+                          }}
+                          contentStyle={{
+                            border: '1px solid #E5E4DF',
+                            borderRadius: 8,
+                            fontSize: 12,
+                            color: '#1A1A18',
+                          }}
+                        />
+                        <ReferenceLine
+                          y={80}
+                          stroke="#DC2626"
+                          strokeDasharray="4 4"
+                          label={{ value: '80%', position: 'right', fontSize: 11, fill: '#DC2626' }}
+                        />
+                        <Bar dataKey="porcentaje" fill="#16A34A" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-72 flex items-center justify-center text-[#5A5A56] text-sm">
+                      Sin datos
+                    </div>
+                  )}
+                </div>
+
+                {/* Students table */}
+                <div className="bg-white rounded-lg border border-[#E5E4DF] overflow-hidden">
+                  <div className="overflow-x-auto">
+                    {loading ? (
+                      <div className="p-5 space-y-3">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div key={i} className="h-10 bg-[#EEEDE8] rounded animate-pulse" />
+                        ))}
+                      </div>
+                    ) : (
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-[#E5E4DF]">
+                            {[
+                              { key: 'no_control' as const, label: 'No. Control' },
+                              { key: 'nombre' as const, label: 'Nombre' },
+                              { key: 'total_sesiones' as const, label: 'Sesiones' },
+                              { key: 'asistencias' as const, label: 'Asistencias' },
+                              { key: 'ausencias' as const, label: 'Ausencias' },
+                              { key: 'porcentaje' as const, label: '%' },
+                            ].map((col) => (
+                              <th
+                                key={col.key}
+                                onClick={() =>
+                                  setSortConfig({
+                                    key: col.key,
+                                    direction:
+                                      sortConfig.key === col.key &&
+                                      sortConfig.direction === 'asc'
+                                        ? 'desc'
+                                        : 'asc',
+                                  })
+                                }
+                                className="px-5 py-3 text-left text-xs font-medium text-[#5A5A56] uppercase tracking-wide cursor-pointer hover:text-[#1A1A18] transition-colors"
+                              >
+                                <span className="flex items-center gap-1">
+                                  {col.label}
+                                  {sortConfig.key === col.key && (
+                                    <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                  )}
+                                </span>
+                              </th>
+                            ))}
+                            <th className="px-5 py-3 text-left text-xs font-medium text-[#5A5A56] uppercase tracking-wide">
+                              Estado
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {estudiantesOrdenados.map((est) => {
+                            let estadoColor = 'text-[#16A34A]'
+                            let estadoLabel = 'Regular'
+
+                            if (est.porcentaje < 70) {
+                              estadoColor = 'text-[#DC2626]'
+                              estadoLabel = 'En Riesgo'
+                            } else if (est.porcentaje < 80) {
+                              estadoColor = 'text-[#D97706]'
+                              estadoLabel = 'Atención'
+                            }
+
+                            return (
+                              <tr
+                                key={est.estudiante_id}
+                                className="border-b border-[#E5E4DF] last:border-0 hover:bg-[#F5F4EF]/60 transition-colors"
+                              >
+                                <td className="px-5 py-3.5 text-sm font-medium text-[#1A1A18]">
+                                  {est.no_control}
+                                </td>
+                                <td className="px-5 py-3.5 text-sm text-[#1A1A18]">
+                                  {est.nombre}
+                                </td>
+                                <td className="px-5 py-3.5 text-sm text-[#5A5A56]">
+                                  {est.total_sesiones}
+                                </td>
+                                <td className="px-5 py-3.5 text-sm text-[#5A5A56]">
+                                  {est.asistencias}
+                                </td>
+                                <td className="px-5 py-3.5 text-sm text-[#5A5A56]">
+                                  {est.ausencias}
+                                </td>
+                                <td className="px-5 py-3.5 text-sm font-semibold text-[#1A1A18]">
+                                  {est.porcentaje.toFixed(1)}%
+                                </td>
+                                <td className="px-5 py-3.5 text-sm">
+                                  <span className={`font-medium ${estadoColor}`}>
+                                    {estadoLabel}
+                                  </span>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+
+                {/* Export */}
+                <div className="flex justify-end pb-2">
+                  <button
+                    onClick={handleExport}
+                    disabled={!grupoSeleccionado || exporting || loading}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#2C2C2A] text-white text-sm font-medium rounded-lg hover:bg-[#1A1A18] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <IconDownload size={16} />
+                    {exporting ? 'Descargando...' : 'Descargar CSV'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        <BottomNav />
+      </div>
     </div>
-  );
+  )
 }
