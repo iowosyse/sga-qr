@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from app.database import get_async_session
 from app.models.academic import Aula, Grupo, Horario, Inscripcion, Materia
@@ -73,11 +74,14 @@ async def _require_estudiante(
     return user
 
 
+from app.services.ratelimiter import attend_rate_limiter
+
 @router.post("/attend", response_model=AttendResponse)
 async def attend(
     body: AttendRequest,
     estudiante: Usuario = Depends(_require_estudiante),
     db: AsyncSession = Depends(get_async_session),
+    _: None = Depends(attend_rate_limiter),
 ):
     # 1. Find sesion_activa whose secret validates the token
     all_active = await db.execute(select(SesionActiva))
@@ -163,7 +167,15 @@ async def attend(
         estado="presente",
     )
     db.add(asistencia)
-    await db.commit()
+    
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Tu asistencia ya fue registrada simultáneamente.",
+        )
 
     # 7. Get session details for response
     grupo_result = await db.execute(select(Grupo).where(Grupo.id == horario.grupo_id))

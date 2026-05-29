@@ -38,6 +38,12 @@ async def websocket_session(
     await manager.connect(session_id, websocket)
     try:
         while True:
-            await websocket.receive_text()
+            try:
+                data = await websocket.receive_json()
+                if isinstance(data, dict) and data.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+            except ValueError:
+                # Si no es un JSON válido, simplemente lo ignoramos para no caer
+                pass
     except WebSocketDisconnect:
         await manager.disconnect(session_id, websocket)

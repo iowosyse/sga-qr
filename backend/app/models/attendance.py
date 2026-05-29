@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func, UniqueConstraint
 from app.database import Base
 
 
@@ -11,6 +11,10 @@ class Asistencia(Base):
     timestamp     = Column(DateTime, server_default=func.now(), nullable=False)
     metodo        = Column(String(10), nullable=False, default="qr")
     estado        = Column(String(15), nullable=False, default="presente")
+
+    __table_args__ = (
+        UniqueConstraint("sesion_id", "estudiante_id", name="asistencias_sesion_id_estudiante_id_key"),
+    )
 
 
 class Justificante(Base):
