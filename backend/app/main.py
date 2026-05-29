@@ -12,7 +12,19 @@ from app.routers.websocket import router as ws_router
 from app.routers.reports import router as reports_router
 from app.routers.justificantes import router as justificantes_router
 
-app = FastAPI(title="SGA-QR API", version="1.0.0")
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from app.tasks.cleanup import cleanup_stale_sessions
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(cleanup_stale_sessions, 'interval', minutes=30)
+    scheduler.start()
+    yield
+    scheduler.shutdown()
+
+app = FastAPI(title="SGA-QR API", version="1.0.0", lifespan=lifespan)
 
 
 @app.exception_handler(Exception)
