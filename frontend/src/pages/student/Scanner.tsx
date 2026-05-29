@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { IconArrowLeft, IconAlertTriangle } from '@tabler/icons-react';
+import React, { Suspense } from 'react';
+import { useDevicePermissions } from '@/hooks/useDevicePermissions';
+import { PermissionDeniedAlert } from '@/components/PermissionDeniedAlert';
+
+const DevMockPanel = import.meta.env.DEV 
+  ? React.lazy(() => import('@/components/dev/MockPanel')) 
+  : () => null;
 
 // BarcodeDetector is not in the TS standard lib yet.
 // eslint-disable-next-line no-var
@@ -13,6 +20,7 @@ export function Scanner() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const detectedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const { cameraStatus, geolocationStatus } = useDevicePermissions();
 
   const stopAll = () => {
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
@@ -132,6 +140,10 @@ export function Scanner() {
 
       {/* Camera area */}
       <div className="flex-1 relative" style={{ background: '#000', minHeight: '60vh' }}>
+        <div className="absolute top-0 left-0 right-0 z-50 p-4">
+          <PermissionDeniedAlert status={cameraStatus} type="camera" />
+          <PermissionDeniedAlert status={geolocationStatus} type="geolocation" />
+        </div>
         {error ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 text-center">
             <IconAlertTriangle size={48} style={{ color: '#EF4444' }} />
@@ -208,18 +220,11 @@ export function Scanner() {
 
       {/* Bottom actions */}
       <div className="flex flex-col shrink-0" style={{ gap: 10, padding: '16px 24px 36px' }}>
-        <button
-          onClick={() => navigate('/student/gps', { state: { token: 'MOCK_TOKEN_DEV_2026' } })}
-          style={{
-            padding: '14px', borderRadius: 12,
-            border: '1px solid rgba(255,255,255,0.18)',
-            backgroundColor: 'rgba(255,255,255,0.08)',
-            color: 'rgba(255,255,255,0.85)',
-            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-          }}
-        >
-          Simular escaneo (dev)
-        </button>
+        {import.meta.env.DEV && (
+          <Suspense fallback={null}>
+            <DevMockPanel onSimulateQR={(token) => navigate('/student/gps', { state: { token } })} />
+          </Suspense>
+        )}
         <button
           style={{
             padding: '12px', borderRadius: 12,

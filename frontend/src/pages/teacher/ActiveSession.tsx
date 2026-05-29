@@ -10,6 +10,7 @@ import { StudentRow } from '@/components/StudentRow';
 import { LiveBadge } from '@/components/LiveBadge';
 import { CountdownBar } from '@/components/CountdownBar';
 import { apiClient, type AttendanceRecord } from '@/lib/api';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 const QR_MIN = 150;
 const QR_MAX = 500;
@@ -57,12 +58,18 @@ export function ActiveSession() {
   const [students, setStudents] = useState<StudentEntry[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [connected, setConnected] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('qr');
   const [qrSize, setQrSize] = useState(200);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(14);
-  const wsRef = useRef<WebSocket | null>(null);
+  
+  const token = localStorage.getItem('access_token') ?? '';
+  // useWebSocket hook for robust connection with backoff
+  const { status: wsStatus, ws } = useWebSocket(
+    sessionId ? `${WS_BASE.replace('http', 'ws')}/ws/session/${sessionId}?token=${token}` : ''
+  );
+  const connected = wsStatus === 'connected';
+  
   const countdownExpiresAt = useRef<number>(Date.now() + 14000);
   const nombre = localStorage.getItem('nombre') ?? 'Docente';
 
@@ -105,14 +112,9 @@ export function ActiveSession() {
   }, [sessionId]);
 
   useEffect(() => {
-    if (!sessionId) return;
-    const token = localStorage.getItem('access_token') ?? '';
-    const ws = new WebSocket(`${WS_BASE}/ws/session/${sessionId}?token=${token}`);
-    wsRef.current = ws;
-    ws.onopen  = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => setConnected(false);
-    ws.onmessage = (event) => {
+    if (!ws) return;
+    
+    const handleMessage = (event: MessageEvent) => {
       try {
         const msg = JSON.parse(event.data as string);
         if (msg.type === 'attendance' || msg.type === 'attendance_updated') {
@@ -126,8 +128,12 @@ export function ActiveSession() {
         }
       } catch { /* ignore */ }
     };
-    return () => ws.close();
-  }, [sessionId]);
+
+    ws.addEventListener('message', handleMessage);
+    return () => {
+      ws.removeEventListener('message', handleMessage);
+    };
+  }, [ws]);
 
   // Escape key exits fullscreen
   useEffect(() => {
@@ -154,7 +160,7 @@ export function ActiveSession() {
 
   const handleCloseSession = async () => {
     try { await apiClient.closeSession(sessionId); } catch { /* proceed anyway */ }
-    wsRef.current?.close();
+    ws?.close();
     navigate('/teacher/dashboard');
   };
 
@@ -210,7 +216,19 @@ export function ActiveSession() {
             {connected && <span className="ml-2 text-green-600">●</span>}
           </p>
         </div>
-        <LiveBadge />
+        {wsStatus === 'reconnecting' ? (
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-100">
+             <div className="animate-spin w-[10px] h-[10px] rounded-full border-2 border-orange-500 border-t-transparent" />
+             <span className="text-[11px] font-bold text-orange-600 tracking-wider">Reconectando...</span>
+          </div>
+        ) : wsStatus === 'disconnected' || wsStatus === 'error' ? (
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-100">
+             <div className="w-[7px] h-[7px] rounded-full bg-red-600 flex-shrink-0" />
+             <span className="text-[11px] font-bold text-red-600 tracking-wider">Desconectado</span>
+          </div>
+        ) : (
+          <LiveBadge />
+        )}
       </div>
 
       {/* Stat cards */}
